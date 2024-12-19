@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { logoutUser } from '../../services/authService';
 import { getUserData } from '../../utils/userStorage';
 import { AuthContext } from '../../context/AuthContext';
+// import Icon from 'react-native-vector-icons/FontAwesome';
 
 
-const WelcomeScreen = () => {
+
+const FluxScreen = () => {
 
   const { logout } = useContext(AuthContext); // Utilisation de la méthode logout depuis AuthContext
   const [userName, setUserName] = useState(null);
@@ -36,7 +38,9 @@ const WelcomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}> Bienvenue {userName || 'à Toi bel Inconnu'}! </Text>
+      <Text style={styles.title}> Bienvenue {userName || 'à Toi bel Inconnu'}!  
+
+      </Text>
       <TouchableOpacity style={styles.button} onPress={handleLogout}>
         <Text style={styles.buttonText}>Se déconnecter</Text>
       </TouchableOpacity>
@@ -70,4 +74,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WelcomeScreen;
+export default FluxScreen;
