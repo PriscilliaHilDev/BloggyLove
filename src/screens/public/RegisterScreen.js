@@ -12,8 +12,10 @@ import {
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { registerUser } from '../../services/authService';
-// import { Icon } from 'react-native-elements';
 import { AuthContext } from '../../context/AuthContext';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+
 
 const RegisterScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext);
@@ -24,8 +26,8 @@ const RegisterScreen = ({ navigation }) => {
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const [confirmPasswordVisibility, setConfirmPasswordVisibility] = useState(false);
 
-  const passwordVisibilityIcon = passwordVisibility ? '👁️' : '🙈';
-  const confirmPasswordVisibilityIcon = confirmPasswordVisibility ? '👁️' : '🙈';
+  const passwordVisibilityIcon = passwordVisibility ? <Icon name="eye" size={30} color='black' />: <Icon name="eye-slash" size={30} color='black' />;
+  const confirmPasswordVisibilityIcon = confirmPasswordVisibility ?<Icon name="eye" size={30} color='black' /> : <Icon name="eye-slash" size={30} color='black' />;
 
   // Variables pour valider le mot de passe
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -100,8 +102,6 @@ const RegisterScreen = ({ navigation }) => {
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>Inscription</Text>
-        <Icon name="home" type="font-awesome" />
-
         <Formik
           initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
           validationSchema={validationSchema}

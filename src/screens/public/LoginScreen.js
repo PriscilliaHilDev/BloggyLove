@@ -4,16 +4,17 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { AuthContext } from '../../context/AuthContext'; // Importer le contexte AuthContext
 import { loginUser } from '../../services/authService';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const LoginScreen = ({ navigation }) => {
   const { login } = useContext(AuthContext); // Utiliser login du AuthContext
   const [secureText, setSecureText] = useState(true); // État pour contrôler la visibilité du mot de passe
-  const passwordVisibilityIcon = !secureText ? '👁️' : '🙈';
+  const passwordVisibilityIcon = !secureText ? <Icon name="eye" size={30} color="black" /> : <Icon name="eye-slash" size={30} color="black" />;
 
   // Validation de formulaire avec Yup
   const validationSchema = Yup.object().shape({
     email: Yup.string().email('Email invalide').required('Email est requis'),
-    password: Yup.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères').required('Mot de passe est requis'),
+    password: Yup.string().required('Mot de passe est requis'),
   });
 
   const handleLogin = async (values, resetForm) => {
@@ -32,6 +33,9 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
     }
   };
+
+  // const myIcon = <Icon name="rocket" size={30} color="#900" />;
+
 
   // Fonction pour basculer l'état du mot de passe (afficher/masquer)
   const toggleSecureTextEntry = () => {

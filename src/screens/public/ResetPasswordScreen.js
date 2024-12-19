@@ -6,6 +6,8 @@ import { Formik } from 'formik';
 import { resetPassword, logoutUser } from '../../services/authService';
 import { AuthContext } from '../../context/AuthContext';
 import { showAlert } from '../../utils';  // Importation de showAlert
+import Icon from 'react-native-vector-icons/FontAwesome';
+
 
 const ResetPasswordScreen = () => {
   const route = useRoute();
@@ -15,8 +17,8 @@ const ResetPasswordScreen = () => {
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const [confirmPasswordVisibility, setConfirmPasswordVisibility] = useState(false);
 
-  const passwordVisibilityIcon = passwordVisibility ? '👁️' : '🙈';
-  const confirmPasswordVisibilityIcon = confirmPasswordVisibility ? '👁️' : '🙈';
+  const passwordVisibilityIcon = passwordVisibility ? <Icon name="eye" size={30} color="black" /> : <Icon name="eye-slash" size={30} color="black" />;
+  const confirmPasswordVisibilityIcon = confirmPasswordVisibility ? <Icon name="eye" size={30} color="black" /> : <Icon name="eye-slash" size={30} color="black" />;
 
   const [token, setToken] = useState(route.params?.token || null);
   const [loading, setLoading] = useState(false);
