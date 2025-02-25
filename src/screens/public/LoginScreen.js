@@ -22,6 +22,7 @@ const LoginScreen = ({ navigation }) => {
       // Appeler le service pour effectuer la connexion (remplacer par votre logique de connexion)
       const result = await loginUser(values);
 
+    
       if (result.success) {
         // Réinitialisation des champs du formulaire si la connexion est réussie
         resetForm();
@@ -82,7 +83,7 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                 <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.eyeIcon}>
-                  <Text>{passwordVisibilityIcon}</Text> {/* Affiche une icône pour basculer l'affichage du mot de passe */}
+                  {passwordVisibilityIcon} {/* Affiche une icône pour basculer l'affichage du mot de passe */}
                 </TouchableOpacity>
               </View>
 

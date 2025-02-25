@@ -153,7 +153,7 @@ const RegisterScreen = ({ navigation }) => {
                   value={values.password}
                 />
                 <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-                  <Text>{passwordVisibilityIcon}</Text>
+                  {passwordVisibilityIcon}
                 </TouchableOpacity>
               </View>
 
@@ -198,7 +198,7 @@ const RegisterScreen = ({ navigation }) => {
                   value={values.confirmPassword}
                 />
                 <TouchableOpacity onPress={toggleConfirmPasswordVisibility} style={styles.eyeIcon}>
-                  <Text>{confirmPasswordVisibilityIcon}</Text>
+                  {confirmPasswordVisibilityIcon}
                 </TouchableOpacity>
                 {touched.confirmPassword && errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
               </View>
