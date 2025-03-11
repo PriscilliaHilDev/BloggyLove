@@ -1,23 +1,18 @@
-import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { getUserData } from '../../utils/userStorage';
+import SearchInput from '../../components/SearchInput';
+import { getAllPosts } from '../../services/postService';
 
 const FluxScreen = ({ navigation }) => {
   const [userName, setUserName] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('Tous');
-  
-  // Faux contenu de publications
-  const posts = [
-    { id: '1', category: 'Poème', content: 'Roses are red, violets are blue, Lorem ipsum dolor sit amet.' },
-    { id: '2', category: 'Déclaration', content: 'Je t’aime plus que tout, et chaque instant est magique avec toi.' },
-    { id: '3', category: 'Histoire', content: 'Il était une fois une rencontre qui changea tout...' },
-    { id: '4', category: 'Poème', content: 'Dans tes yeux, je vois un océan d’étoiles.' },
-    { id: '5', category: 'Déclaration', content: 'Tu es mon univers, mon inspiration et ma raison de sourire.' }
-  ];
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Récupérer le nom de l'utilisateur
   useEffect(() => {
     const getUser = async () => {
       const userData = await getUserData();
@@ -28,47 +23,84 @@ const FluxScreen = ({ navigation }) => {
     getUser();
   }, []);
 
-  // Filtrer les publications
-  const filteredPosts = selectedFilter === 'Tous' ? posts : posts.filter(post => post.category === selectedFilter);
+  useEffect(() => {
+    fetchPosts(1, true);  // Récupérer les posts à la première ouverture
+  }, []);
+
+  const fetchPosts = async (pageNum = 1, reset = false) => {
+    if (loading || (pageNum > 1 && pageNum > totalPages)) return;
+    setLoading(true);
+    try {
+      const response = await getAllPosts(pageNum);
+      if (response.success) {
+        setPosts((prevPosts) => (reset ? response.data : [...prevPosts, ...response.data]));
+        setTotalPages(response.totalPages);
+        setPage(response.currentPage);
+      } else {
+        console.error('Erreur API:', response.message);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des posts :', error);
+    }
+    setLoading(false);
+  };
+
+  // Filtrer les posts en fonction de la catégorie sélectionnée et de la recherche
+  const filteredPosts = posts.filter(post => {
+    const isCategoryMatch =
+      selectedFilter === 'Tous' ||
+      (post.categoryId && post.categoryId.name === selectedFilter);  // Vérification que categoryId existe et est un objet avec une propriété 'name'
+    const isSearchMatch = post.content.toLowerCase().includes(search.toLowerCase());
+    return isCategoryMatch && isSearchMatch;
+  });
+
+  const availableFilters = ['Tous', 'Poème', 'Déclaration', 'Histoire'].map(filter => ({
+    name: filter,
+    disabled: filter !== 'Tous' && posts.filter(post => post.categoryId && post.categoryId.name === filter).length === 0  // Vérification de la catégorie
+  }));
+
+  // Optimisation de la liste de posts pour éviter des rendus inutiles
+  const PostItem = React.memo(({ item }) => {
+    // Vérification que categoryId existe et est un objet avec une propriété 'name'
+    const categories = item.categoryId && item.categoryId.name ? item.categoryId.name : 'Aucune catégorie';
+    return (
+      <View style={styles.postContainer}>
+        <Text style={styles.postCategory}>{categories}</Text>
+        <Text style={styles.postContent}>{item.content}</Text>
+      </View>
+    );
+  });
+
+  // Utilisation de useCallback pour éviter de recréer la fonction de rendu de chaque item
+  const renderItem = useCallback(({ item }) => <PostItem item={item} />, []);
 
   return (
     <View style={styles.container}>
-     
-
-      {/* Barre de recherche */}
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Rechercher..."
-        placeholderTextColor="#888"
-        value={search}
-        onChangeText={setSearch}
-      />
-
-      {/* Filtres */}
+      <SearchInput searchValue={search} onSearchChange={setSearch} />
       <View style={styles.filterContainer}>
-        {['Tous', 'Poème', 'Déclaration', 'Histoire'].map((filter) => (
+        {availableFilters.map(({ name, disabled }) => (
           <TouchableOpacity
-            key={filter}
-            style={[styles.filterButton, selectedFilter === filter && styles.activeFilter]}
-            onPress={() => setSelectedFilter(filter)}
+            key={name}
+            style={[styles.filterButton, selectedFilter === name && styles.activeFilter, disabled && styles.disabledFilter]}
+            onPress={() => !disabled && setSelectedFilter(name)}
+            disabled={disabled}
           >
-            <Text style={[styles.filterText, selectedFilter === filter && styles.activeFilterText]}>
-              {filter}
+            <Text style={[styles.filterText, selectedFilter === name && styles.activeFilterText, disabled && styles.disabledFilterText]}>
+              {name}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Liste des publications */}
       <FlatList
         data={filteredPosts}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.postContainer}>
-            <Text style={styles.postCategory}>{item.category}</Text>
-            <Text style={styles.postContent}>{item.content}</Text>
-          </View>
-        )}
+        keyExtractor={(item) => item._id || item.id}
+        renderItem={renderItem} // Utilisation de renderItem optimisé avec useCallback
+        onEndReached={() => fetchPosts(page + 1)}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={loading && <ActivityIndicator size="small" color="#ff7f50" />}
+        initialNumToRender={10} // Nombre d'éléments à rendre initialement
+        maxToRenderPerBatch={10} // Nombre d'éléments à rendre par lot
+        windowSize={21} // Taille de la fenêtre de rendu
       />
     </View>
   );
@@ -77,32 +109,8 @@ const FluxScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f7f7',
     paddingHorizontal: 16,
     paddingTop: 20
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  drawerButton: {
-    padding: 10
-  },
-  searchInput: {
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 10
   },
   filterContainer: {
     flexDirection: 'row',
@@ -126,6 +134,13 @@ const styles = StyleSheet.create({
   activeFilterText: {
     color: '#fff',
     fontWeight: 'bold'
+  },
+  disabledFilter: {
+    borderColor: '#ddd',
+    backgroundColor: '#f0f0f0'
+  },
+  disabledFilterText: {
+    color: '#aaa'
   },
   postContainer: {
     backgroundColor: '#fff',
