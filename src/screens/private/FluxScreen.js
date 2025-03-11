@@ -49,8 +49,11 @@ const FluxScreen = ({ navigation }) => {
   const filteredPosts = posts.filter(post => {
     const isCategoryMatch =
       selectedFilter === 'Tous' ||
-      (post.categoryId && post.categoryId.name === selectedFilter);  // Vérification que categoryId existe et est un objet avec une propriété 'name'
-    const isSearchMatch = post.content.toLowerCase().includes(search.toLowerCase());
+      (post.categoryId && post.categoryId.name === selectedFilter); // Vérification que categoryId existe et est un objet avec une propriété 'name'
+    
+    // Vérification si post.content existe avant de tenter de l'utiliser
+    const isSearchMatch = post.content && post.content.toLowerCase().includes(search.toLowerCase());
+  
     return isCategoryMatch && isSearchMatch;
   });
 
