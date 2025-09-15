@@ -18,7 +18,8 @@ export const saveUserData = async (user, authSource, accessToken, refreshToken) 
   try {
     // Vérification de la validité des données avant de les sauvegarder
     if (!user || !accessToken || !refreshToken) {
-      throw new Error('Données utilisateur manquantes');
+      // throw new Error('Données utilisateur manquantes');
+      return null;
     }
 
     // Si 'user' est déjà une chaîne JSON, ne pas essayer de le convertir
@@ -48,7 +49,7 @@ export const getUserData = async () => {
 
     // Vérification si toutes les données nécessaires sont présentes
     if (!user || !authSource || !accessToken || !refreshToken) {
-      console.error('Certaines données sont manquantes');
+      // console.error('Certaines données sont manquantes');
       return null;
     }
 

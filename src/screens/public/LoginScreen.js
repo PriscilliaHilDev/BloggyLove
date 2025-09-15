@@ -1,62 +1,38 @@
+// src/screens/public/LoginScreen.js
 import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { AuthContext } from '../../context/AuthContext'; // Importer le contexte AuthContext
-import { loginUser } from '../../services/authService';
+import { AuthContext } from '../../context/AuthContext'; 
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const LoginScreen = ({ navigation }) => {
-  const { login } = useContext(AuthContext); // Utiliser login du AuthContext
-  const [secureText, setSecureText] = useState(true); // État pour contrôler la visibilité du mot de passe
-  const passwordVisibilityIcon = !secureText ? <Icon name="eye" size={30} color="black" /> : <Icon name="eye-slash" size={30} color="black" />;
-
-  // Validation de formulaire avec Yup
+  const { login, authError, isLoading } = useContext(AuthContext);
+  const [secureText, setSecureText] = useState(true);
   const validationSchema = Yup.object().shape({
     email: Yup.string().email('Email invalide').required('Email est requis'),
     password: Yup.string().required('Mot de passe est requis'),
   });
 
-  const handleLogin = async (values, resetForm) => {
-    try {
-      // Appeler le service pour effectuer la connexion (remplacer par votre logique de connexion)
-      const result = await loginUser(values);
-
-    
-      if (result.success) {
-        // Réinitialisation des champs du formulaire si la connexion est réussie
-        resetForm();
-        login();
-      } else {
-        Alert.alert('Erreur', result.message);
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
+  const handleLogin = async (values) => {
+    const { email, password } = values;
+    const res = await login(email, password);
+    if (!res.ok && !res.silent) {
+      Alert.alert('Connexion', res.error || authError || 'Impossible de se connecter');
     }
   };
 
-  // const myIcon = <Icon name="rocket" size={30} color="#900" />;
-
-
-  // Fonction pour basculer l'état du mot de passe (afficher/masquer)
-  const toggleSecureTextEntry = () => {
-    setSecureText(!secureText);
-  };
+  const toggleSecureTextEntry = () => setSecureText(v => !v);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.formContainer}>
         <Text style={styles.title}>Connexion</Text>
 
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={validationSchema}
-          onSubmit={(values, { resetForm }) => {
-            handleLogin(values, resetForm); // Appel de handleLogin et passage de resetForm
-          }}
+          onSubmit={handleLogin}                    // ✅ simple
         >
           {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
             <>
@@ -64,26 +40,34 @@ const LoginScreen = ({ navigation }) => {
                 <TextInput
                   style={[styles.input, touched.email && errors.email ? styles.inputError : null]}
                   placeholder="Email"
+                  placeholderTextColor="#999"
                   keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   onChangeText={handleChange('email')}
                   onBlur={handleBlur('email')}
                   value={values.email}
                 />
-                {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                {touched.email && errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
               </View>
 
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
+                  style={[styles.input, touched.password && errors.password ? styles.inputError : null, { color: '#000' }]}
                   placeholder="Mot de passe"
-                  secureTextEntry={secureText}  // Masquer ou afficher le mot de passe
+                  placeholderTextColor="#999"
+                  secureTextEntry={secureText}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  selectionColor="#000"
                   onChangeText={handleChange('password')}
                   onBlur={handleBlur('password')}
                   value={values.password}
                 />
-                {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.eyeIcon}>
-                  {passwordVisibilityIcon} {/* Affiche une icône pour basculer l'affichage du mot de passe */}
+                {touched.password && errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+
+                <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.eyeIcon} accessibilityRole="button" accessibilityLabel="Afficher/masquer le mot de passe">
+                  <Icon name={secureText ? 'eye-slash' : 'eye'} size={24} color="#000" />
                 </TouchableOpacity>
               </View>
 
@@ -91,16 +75,17 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.linkForgotPassword}>Mot de passe oublié ?</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>Se connecter</Text>
+              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
+                <Text style={styles.submitButtonText}>{isLoading ? 'Chargement…' : 'Se connecter'}</Text>
               </TouchableOpacity>
             </>
           )}
         </Formik>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.linkText}>Vous n'avez pas encore de compte ?</Text>
-          <Text style={styles.linkText}> Inscrivez-vous</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Register')} style={{ alignItems: 'center' }}>
+          <Text style={styles.linkText}>
+            Vous n'avez pas encore de compte ? <Text style={styles.linkText}>Inscrivez-vous</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -108,73 +93,28 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'pink',
-  },
-  formContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  inputContainer: {
-    marginBottom: 15,
-    marginHorizontal: 15,
-    position: 'relative',  // Nécessaire pour positionner l'icône de l'œil
-  },
+  container: { flex: 1, justifyContent: 'center', backgroundColor: 'pink' },
+  formContainer: { backgroundColor: 'white', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 30 },
+  inputContainer: { marginBottom: 15, marginHorizontal: 15, position: 'relative' },
   input: {
     height: 50,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
+    paddingRight: 40, // espace pour l’icône œil
     fontSize: 16,
+    color: '#000',
+    backgroundColor: '#fff',
   },
-  inputError: {
-    borderColor: '#f44336',
-  },
-  errorText: {
-    color: '#f44336',
-    fontSize: 12,
-    marginTop: 5,
-  },
-  submitButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkText: {
-    color: '#007BFF',
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  linkForgotPassword: {
-    color: '#007BFF',
-    fontSize: 14,
-    padding: 10,
-    textAlign: 'right', // Aligner le texte à droite
-    width: '100%', // Nécessaire pour que l'alignement fonctionne correctement
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 10,
-    top: 12,  // Positionne l'icône à droite du champ de saisie
-  },
+  inputError: { borderColor: '#f44336' },
+  errorText: { color: '#f44336', fontSize: 12, marginTop: 5 },
+  submitButton: { backgroundColor: '#007BFF', paddingVertical: 12, borderRadius: 5, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  linkText: { color: '#007BFF', textAlign: 'center', fontSize: 14 },
+  linkForgotPassword: { color: '#007BFF', fontSize: 14, padding: 10, textAlign: 'right', width: '100%' },
+  eyeIcon: { position: 'absolute', right: 10, top: 12 },
 });
 
 export default LoginScreen;

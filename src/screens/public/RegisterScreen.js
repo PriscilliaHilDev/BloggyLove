@@ -1,27 +1,15 @@
 import React, { useState, useContext } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import { registerUser } from '../../services/authService';
 import { AuthContext } from '../../context/AuthContext';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 
-
 const RegisterScreen = ({ navigation }) => {
-  const { login } = useContext(AuthContext);
-  const [isLoading, setIsLoading] = useState(false);
-
-
+  const { register, authError, isLoading } = useContext(AuthContext);
   // Variables pour la visibilité des mots de passe
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const [confirmPasswordVisibility, setConfirmPasswordVisibility] = useState(false);
@@ -67,22 +55,11 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleRegister = async (values, resetForm) => {
-    const { name, email, password } = values;
-    setIsLoading(true);
-
-    try {
-      const result = await registerUser({ name, email, password });
-
-      if (result.success) {
-        resetForm();
-        login();
-      } else {
-        Alert.alert('Erreur', result.message);
-      }
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
-    } finally {
-      setIsLoading(false);
+    const res = await register(values);
+    if (res.ok) {
+      resetForm();
+    } else {
+      Alert.alert('Inscription', res.error || authError || "Erreur d'inscription");
     }
   };
 
@@ -117,6 +94,7 @@ const RegisterScreen = ({ navigation }) => {
                     values.name && !errors.name ? styles.inputValid : null,
                   ]}
                   placeholder="Nom"
+                  placeholderTextColor="#999"
                   onChangeText={handleChange('name')}
                   onBlur={handleBlur('name')}
                   value={values.name}
@@ -131,6 +109,7 @@ const RegisterScreen = ({ navigation }) => {
                     touched.email && errors.email ? styles.inputError : null,
                     values.email && !errors.email ? styles.inputValid : null,
                   ]}
+                  placeholderTextColor="#999"
                   placeholder="Email"
                   keyboardType="email-address"
                   onChangeText={handleChange('email')}
@@ -140,23 +119,31 @@ const RegisterScreen = ({ navigation }) => {
                 {touched.email && errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
               </View>
 
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={[styles.input, touched.password && errors.password ? styles.inputError : null]}
-                  placeholder="Mot de passe"
-                  secureTextEntry={!passwordVisibility}
-                  onChangeText={(text) => {
-                    handleChange('password')(text);
-                    handlePasswordChange(text); // Validation mot de passe
-                  }}
-                  onBlur={handleBlur('password')}
-                  value={values.password}
-                />
-                <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-                  {passwordVisibilityIcon}
-                </TouchableOpacity>
+              <View style={[styles.inputContainer, styles.inputWithIcon]}>
+        <TextInput
+          style={[
+            styles.input,
+            touched.password && errors.password ? styles.inputError : null,
+            { color: '#000' }                 // ← texte/points en noir
+          ]}
+          placeholder="Mot de passe"
+          placeholderTextColor="#999"
+          secureTextEntry={!passwordVisibility}
+          autoCapitalize="none"
+          autoCorrect={false}
+          selectionColor="#000"               // curseur/sélection en noir (Android/iOS)
+          // cursorColor="#000"               // iOS (RN 0.71+) si dispo
+          onChangeText={(text) => {
+            handleChange('password')(text);
+            handlePasswordChange(text);
+          }}
+          onBlur={handleBlur('password')}
+          value={values.password}
+        />
+        <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+          <Icon name={passwordVisibility ? 'eye' : 'eye-slash'} size={22} color="#000" />
+        </TouchableOpacity>
               </View>
-
               {/* Affichage des critères sous forme de badges */}
               {!isPasswordValid && values.password.length > 0 && (
                 <View style={styles.passwordCriteriaContainer}>
@@ -188,20 +175,32 @@ const RegisterScreen = ({ navigation }) => {
                 </View>
               )}
 
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, styles.inputWithIcon]}>
                 <TextInput
-                  style={[styles.input, touched.confirmPassword && errors.confirmPassword ? styles.inputError : null]}
+                  style={[
+                    styles.input,
+                    touched.confirmPassword && errors.confirmPassword ? styles.inputError : null,
+                    { color: '#000' }                 // ← texte/points en noir
+                  ]}
                   placeholder="Confirmer le mot de passe"
+                  placeholderTextColor="#999"
                   secureTextEntry={!confirmPasswordVisibility}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  selectionColor="#000"
+                  // cursorColor="#000"
                   onChangeText={handleChange('confirmPassword')}
                   onBlur={handleBlur('confirmPassword')}
                   value={values.confirmPassword}
                 />
                 <TouchableOpacity onPress={toggleConfirmPasswordVisibility} style={styles.eyeIcon}>
-                  {confirmPasswordVisibilityIcon}
+                  <Icon name={confirmPasswordVisibility ? 'eye' : 'eye-slash'} size={22} color="#000" />
                 </TouchableOpacity>
-                {touched.confirmPassword && errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+                {touched.confirmPassword && errors.confirmPassword ? (
+                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                ) : null}
               </View>
+
 
               <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
                 {isLoading ? (
